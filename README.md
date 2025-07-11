@@ -1,222 +1,213 @@
-# bumpster
+# Agentara
 
-专为 Python 项目设计的智能语义化版本管理命令行工具。
+基于 textX DSL 的 AI Agent 生成框架，通过标准化的领域特定语言定义和验证 AI Agent。
 
-## 简介
+## 项目概述
 
-`bumpster` 是一个遵循 PEP 440 规范的 Python 项目版本管理工具。它可以自动更新项目版本号，创建 Git 提交和标签，简化版本发布流程。
+Agentara 是一个创新的框架，旨在解决 AI 生成 Agent 时的标准化和规范性问题。通过使用 [textX](https://github.com/textX/textX) 库定义清晰的 DSL（领域特定语言），确保 AI 生成的 Agent 符合预定义的标准格式。
 
-## 主要功能
+## 核心特性
 
-- ✅ 完全遵循 PEP 440 版本规范
-- ✅ 支持 pyproject.toml 和 setup.py
-- ✅ 支持预发布版本（alpha、beta、rc、dev、post）
-- ✅ 自动 Git 集成（提交、标签、推送）
-- ✅ 交互式命令行界面
-- ✅ 内置版本号验证功能
-- ✅ 安全检查（分支、工作区状态）
+- 🎯 **标准化 DSL**：使用 textX 定义 Agent 的标准语法
+- ✅ **自动验证**：解析即验证，确保生成内容符合规范
+- 🚀 **AI 友好**：清晰的错误提示，帮助 AI 快速修正
+- 🔧 **灵活扩展**：支持自定义验证规则和业务逻辑
+- 📝 **完整工具链**：提供解析器、验证器和代码生成器
 
-## 安装
+## 技术背景
 
-```bash
-# 使用 uv 全局安装
-uv tool install bumpster
-```
+### 为什么选择 textX？
 
-### 开发安装
+textX 是一个成熟的 Python DSL 框架，具有以下优势：
+
+- **语法清晰**：基于 PEG 语法，定义直观易懂
+- **错误提示精确**：提供准确的错误位置和期望内容
+- **解析即验证**：解析过程自动完成基础验证
+- **易于扩展**：支持自定义处理器和验证规则
+
+## 快速开始
+
+### 安装
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yarnovo/bumpster-py.git
-cd bumpster-py
+git clone https://github.com/yourusername/agentara.git
+cd agentara
+
+# 创建虚拟环境
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 安装依赖
-uv sync
-
-# 全局安装开发版本（类似 npm link）
-uv tool install -e .
+pip install -e .
 ```
 
-## 使用方法
-
-### 版本升级
-
-在项目根目录运行：
-
-```bash
-# 主命令
-bump
-
-# 别名
-bump-py
-```
-
-工具会自动：
-1. 检测当前版本
-2. 提供交互式选项
-3. 更新配置文件
-4. 创建 Git 提交和标签
-5. 推送到远程仓库（可选）
-
-### 干跑模式
-
-使用 `--dry-run` 选项预览操作而不实际执行：
-
-```bash
-# 预览版本更新操作
-bump --dry-run
-```
-
-干跑模式会：
-- 显示所有将要执行的操作
-- 不修改任何文件
-- 不创建 Git 提交或标签
-- 不推送到远程仓库
-- 完全无副作用，安全预览
-
-### 版本验证
-
-使用 `validate` 子命令验证版本号是否符合 PEP 440 规范：
-
-```bash
-# 验证版本号
-bump validate 1.0.0
-bump validate 1.0.0a0
-bump-py validate 2.0.0.dev1
-
-# 输出示例
-✅ Version 1.0.0 is PEP 440 compliant  # 退出码 0
-❌ Version 'invalid' is not PEP 440 compliant  # 退出码 1
-```
-
-在 CI/CD 中使用：
-
-```bash
-# 在 shell 脚本中
-if bump validate "$VERSION"; then
-  echo "版本号有效"
-else
-  echo "版本号无效"
-  exit 1
-fi
-
-# 或使用 Python 模块
-python -m bump_version.cli validate 1.0.0
-```
-
-## 版本格式
-
-遵循 PEP 440 规范的版本号格式：
-
-```
-1.0.0          # 正式版本
-1.0.0a0        # Alpha 版本
-1.0.0b0        # Beta 版本
-1.0.0rc0       # Release Candidate
-1.0.0.dev0     # 开发版本
-1.0.0.post0    # 后发布版本
-```
-
-## 配置文件支持
-
-### pyproject.toml（推荐）
-
-```toml
-[project]
-name = "my-package"
-version = "1.0.0"
-
-# 或 Poetry 项目
-[tool.poetry]
-name = "my-package" 
-version = "1.0.0"
-```
-
-### setup.py
+### 基本使用
 
 ```python
-setup(
-    name="my-package",
-    version="1.0.0",
-    ...
-)
+from agentara import AgentParser
+
+# 创建解析器
+parser = AgentParser()
+
+# 定义 Agent
+agent_definition = """
+agent WebSearcher {
+    name: "Web Search Agent"
+    description: "Searches the web for information"
+    
+    capabilities {
+        - search_web
+        - extract_content
+        - summarize
+    }
+    
+    parameters {
+        max_results: 10
+        timeout: 30
+    }
+}
+"""
+
+# 解析和验证
+try:
+    agent = parser.parse(agent_definition)
+    print(f"成功解析 Agent: {agent.name}")
+except Exception as e:
+    print(f"解析错误: {e}")
 ```
 
-## 工作流程示例
+## 项目结构
 
-### 基本发布流程
-
-```bash
-# 1. 开发完成，准备发布新版本
-bump
-# 选择 "正式版本 (Production)"
-# 选择 "Patch (修订号)"
-# 版本：1.0.0 → 1.0.1
-
-# 2. 自动完成
-# - 更新 pyproject.toml
-# - git commit -m "chore: release 1.0.1"
-# - git tag v1.0.1
-# - git push --follow-tags
+```
+agentara/
+├── agentara/              # 核心库
+│   ├── __init__.py
+│   ├── grammar/          # DSL 语法定义
+│   │   └── agent.tx      # Agent DSL 语法
+│   ├── parser.py         # 解析器实现
+│   ├── validators/       # 验证器
+│   └── generators/       # 代码生成器
+├── examples/             # 示例 Agent 定义
+├── tests/               # 测试用例
+├── research/            # 技术调研文档
+└── docs/               # 项目文档
 ```
 
-### 预发布流程
+## DSL 语法示例
 
-```bash
-# 1. 创建 Alpha 版本
-bump
-# 选择 "Alpha 版本"
-# 选择 "Minor (次版本号)"
-# 版本：1.0.0 → 1.1.0a0
+Agent DSL 支持以下特性：
 
-# 2. 升级到 Beta
-bump
-# 选择 "Beta 版本"
-# 版本：1.1.0a0 → 1.1.0b0
+```
+// 基本 Agent 定义
+agent BasicAgent {
+    name: "Simple Agent"
+    version: "1.0.0"
+}
 
-# 3. 发布正式版
-bump
-# 选择 "正式版本 (Production)"
-# 版本：1.1.0b0 → 1.1.0
+// 带有能力和参数的 Agent
+agent AdvancedAgent {
+    name: "Advanced AI Agent"
+    description: "Multi-capability agent"
+    
+    capabilities {
+        - natural_language_processing
+        - code_generation
+        - data_analysis
+    }
+    
+    parameters {
+        model: "gpt-4"
+        temperature: 0.7
+        max_tokens: 2000
+    }
+    
+    rules {
+        // 定义行为规则
+        on_error: retry(3)
+        timeout: 60
+    }
+}
+
+// Agent 组合
+workflow DataPipeline {
+    agents: [DataCollector, DataProcessor, DataAnalyzer]
+    
+    flow {
+        DataCollector -> DataProcessor -> DataAnalyzer
+    }
+}
 ```
 
-## 环境变量
+## 验证机制
 
-- `BUMP_VERSION_SKIP_PUSH`: 设置为任意值时跳过 git push
+Agentara 提供多层次的验证：
 
-## API 使用
-
-在代码中使用版本验证功能：
+1. **语法验证**：自动检查 DSL 语法正确性
+2. **语义验证**：验证业务规则和约束
+3. **引用验证**：确保所有引用的资源存在
+4. **自定义验证**：支持添加特定的验证规则
 
 ```python
-from bump_version.cli import validate_version
+# 添加自定义验证
+from agentara.validators import register_validator
 
-if validate_version("1.0.0"):
-    print("版本号有效")
-else:
-    print("版本号无效")
+@register_validator("agent")
+def validate_agent_name(agent):
+    if not agent.name.isalnum():
+        raise ValueError(f"Agent 名称只能包含字母和数字: {agent.name}")
 ```
 
-## 注意事项
+## 工具链
 
-1. 使用前确保：
-   - 项目已初始化 Git 仓库
-   - 工作区干净（无未提交的更改）
-   - 在主分支（main/master）上操作
+### 命令行工具
 
-2. 版本号规范：
-   - 必须符合 PEP 440 规范
-   - 不要手动添加 'v' 前缀（工具会自动处理）
+```bash
+# 验证 Agent 定义
+agentara validate agent.dsl
 
-3. Git 标签格式：
-   - 自动添加 'v' 前缀：v1.0.0
+# 生成代码
+agentara generate agent.dsl --output agent.py
 
-## 文档
+# 交互式 Agent 设计器
+agentara designer
+```
 
-- [测试指南](TESTING.md) - 本地测试和全局安装说明
-- [开发指南](DEVELOPMENT.md) - 开发环境设置和工作流程
-- [部署指南](DEPLOYMENT.md) - 发布和部署流程
+### API 集成
+
+```python
+from agentara import AgentRegistry
+
+# 注册 Agent
+registry = AgentRegistry()
+registry.register_from_file("agents/web_searcher.dsl")
+
+# 获取并使用 Agent
+agent = registry.get("WebSearcher")
+result = agent.execute(task="Search for Python tutorials")
+
+```
+
+## 开发路线图
+
+- [ ] 完成基础 DSL 语法定义
+- [ ] 实现核心解析器和验证器
+- [ ] 开发代码生成器
+- [ ] 创建 CLI 工具
+- [ ] 编写完整文档
+- [ ] 发布第一个版本
+
+## 贡献指南
+
+欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何参与项目开发。
+
+## 相关文档
+
+- [项目需求](REQUIREMENTS.md) - 详细的项目需求说明
+- [textX 调研报告](research/textX_research_report.md) - textX 库的技术调研
+- [架构设计](ARCHITECTURE.md) - 系统架构设计文档
+- [API 文档](docs/api.md) - 完整的 API 参考
 
 ## 许可证
 
-ISC
+MIT License
