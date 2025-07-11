@@ -1,0 +1,82 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  CI-CD:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          **/uv.lock
+          **/requirements*.txt
+          **/pyproject.toml
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Run linting
+      run: |
+        uv run ruff check bump_version/
+    
+    - name: Run type checking
+      run: |
+        uv run pyright bump_version/
+    
+    - name: Run tests
+      run: |
+        uv run pytest
+    
+    - name: Check if this is a version tag
+      id: check_tag
+      run: |
+        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "is_tag=true" >> $GITHUB_OUTPUT
+          
+          # 移除可能的 'v' 前缀
+          if [[ "$TAG" =~ ^v(.*)$ ]]; then
+            TAG="${BASH_REMATCH[1]}"
+          fi
+          
+          # 使用包内的验证功能验证 PEP 440 版本号格式
+          if uv run python -m bump_version.cli validate "$TAG"; then
+            echo "version=$TAG" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
+        else
+          echo "is_tag=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Build package
+      if: steps.check_tag.outputs.is_tag == 'true'
+      run: |
+        uv build
+    
+    - name: Publish to PyPI
+      if: steps.check_tag.outputs.is_tag == 'true'
+      env:
+        UV_PUBLISH_USERNAME: __token__
+        UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        uv publish
