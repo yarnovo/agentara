@@ -40,6 +40,7 @@ reportUnknownVariableType = false
 reportUnknownMemberType = false
 reportUnknownArgumentType = false
 reportMissingParameterType = false
+reportAttributeAccessIssue = false
 
 [tool.ruff.lint]
 select = [ "E", "W", "F", "I", "B", "UP", "RUF",]

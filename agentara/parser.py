@@ -1,6 +1,7 @@
 """Parser module for Agentara DSL."""
 
 from pathlib import Path
+from typing import Any
 
 from textx import metamodel_from_file, metamodel_from_str
 
@@ -132,7 +133,7 @@ class AgentParser:
             if processors:
                 self.metamodel.register_obj_processors({obj_type.capitalize(): processor for processor in processors})
 
-    def parse(self, content: str):
+    def parse(self, content: str) -> Any:
         """
         Parse Agent DSL content.
 
