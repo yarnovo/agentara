@@ -1,16 +1,88 @@
-"""Parser module for Agentara DSL."""
+"""Parser module for Agentara DSL using Lark."""
 
 from pathlib import Path
-from typing import Any
 
-from textx import metamodel_from_file, metamodel_from_str
+from lark import Lark, Transformer, v_args
+from lark.exceptions import UnexpectedEOF, UnexpectedInput, UnexpectedToken
 
-from .exceptions import AgentaraParseError
-from .registry import get_processors
+
+class AgentTransformer(Transformer):
+    """Transform Lark parse tree into Python objects."""
+
+    @v_args(inline=True)
+    def model(self, *agents):
+        """Transform model node."""
+        return {"agents": list(agents)}
+
+    @v_args(inline=True)
+    def agent(self, agent_id, *properties):
+        """Transform agent node."""
+        props = {}
+        for prop in properties:
+            if isinstance(prop, dict):
+                props.update(prop)
+        return {"id": str(agent_id), "properties": props}
+
+    @v_args(inline=True)
+    def property(self, prop_name, prop_value):
+        """Transform property node."""
+        return {str(prop_name): prop_value}
+
+    @v_args(inline=True)
+    def name(self):
+        return "name"
+
+    @v_args(inline=True)
+    def system_prompt(self):
+        return "system_prompt"
+
+    @v_args(inline=True)
+    def model_provider(self):
+        return "model_provider"
+
+    @v_args(inline=True)
+    def model_name(self):
+        return "model_name"
+
+    @v_args(inline=True)
+    def temperature(self):
+        return "temperature"
+
+    @v_args(inline=True)
+    def max_tokens(self):
+        return "max_tokens"
+
+    @v_args(inline=True)
+    def description(self):
+        return "description"
+
+    @v_args(inline=True)
+    def property_value(self, value):
+        """Transform property value."""
+        return value
+
+    def STRING(self, token):
+        """Transform string token."""
+        return str(token).strip('"')
+
+    def NUMBER(self, token):
+        """Transform number token."""
+        value = str(token)
+        try:
+            if "." in value:
+                return float(value)
+            else:
+                return int(value)
+        except ValueError:
+            return value
+
+    def ID(self, token):
+        """Transform ID token."""
+        return str(token)
 
 
 class AgentParser:
-    """Parser for Agent DSL files."""
+    """Parser for Agent DSL files using Lark."""
 
     def __init__(self, grammar_file: Path | None = None):
         """
@@ -18,122 +90,62 @@ class AgentParser:
 
         Args:
             grammar_file: Optional path to grammar file. If not provided,
-                         uses the default agent.tx grammar.
+                         uses the default agent.lark grammar.
         """
         if grammar_file is None:
-            # Use default grammar file
-            grammar_file = Path(__file__).parent / "grammar" / "agent.tx"
+            grammar_file = Path(__file__).parent / "grammar" / "agent.lark"
 
         try:
             if grammar_file.exists():
-                self.metamodel = metamodel_from_file(str(grammar_file))
+                with open(grammar_file) as f:
+                    grammar_content = f.read()
             else:
                 # Fallback to embedded grammar
-                self._init_with_embedded_grammar()
+                grammar_content = self._get_embedded_grammar()
+
+            # Create Lark parser
+            self.parser = Lark(grammar_content, parser="lalr", start="start")
+            self.transformer = AgentTransformer()
+
         except Exception as e:
-            raise AgentaraParseError(f"Failed to initialize parser: {e}") from e
+            raise Exception(f"Failed to initialize parser: {e}") from e
 
-        # Register processors
-        self._register_processors()
+    def _get_embedded_grammar(self):
+        """Get embedded grammar as fallback."""
+        return """
+// Agentara DSL Grammar Definition for Lark
+// Simplified grammar for AI Agent definitions
 
-    def _init_with_embedded_grammar(self):
-        """Initialize with embedded grammar as fallback."""
-        grammar = """
-        Model:
-            agents*=Agent
-            workflows*=Workflow
-        ;
+?start: model
 
-        Agent:
-            'agent' name=ID '{'
-                properties*=Property
-                capabilities=Capabilities?
-                parameters=Parameters?
-                rules=Rules?
-            '}'
-        ;
+model: agent*
 
-        Property:
-            name=PropertyName ':' value=STRING
-        ;
+agent: "agent" ID "{" property* "}"
 
-        PropertyName:
-            'name' | 'description' | 'version' | 'author' | 'tags'
-        ;
+property: property_name ":" property_value
 
-        Capabilities:
-            'capabilities' '['
-                capabilities+=Capability[',']
-            ']'
-        ;
+property_name: "name" -> name
+            | "system_prompt" -> system_prompt
+            | "model_provider" -> model_provider
+            | "model_name" -> model_name
+            | "temperature" -> temperature
+            | "max_tokens" -> max_tokens
+            | "description" -> description
 
-        Capability:
-            name=/[a-zA-Z_][a-zA-Z0-9_]*/
-        ;
+property_value: STRING | NUMBER | ID
 
-        Parameters:
-            'parameters' '{'
-                params+=ParameterDef
-            '}'
-        ;
+// Terminals
+ID: /[a-zA-Z_][a-zA-Z0-9_]*/
+STRING: /\"[^\"]*\"/
+NUMBER: /\\d+(\\.\\d+)?/
 
-        ParameterDef:
-            name=/[a-zA-Z_][a-zA-Z0-9_]*/ ':' (value=Value | 'required')
-        ;
+// Comments and whitespace
+COMMENT: /\\/\\/[^\\n]*/
+%ignore COMMENT
+%ignore /\\s+/
+"""
 
-        Value:
-            STRING | INT | FLOAT | BOOL | ID
-        ;
-
-        Rules:
-            'rules' '{'
-                rules+=Rule
-            '}'
-        ;
-
-        Rule:
-            name=/[a-zA-Z_][a-zA-Z0-9_]*/ ':' value=RuleValue
-        ;
-
-        RuleValue:
-            FunctionCall | RateLimit | STRING | INT | ID
-        ;
-
-        RateLimit:
-            count=INT '/' period=Period
-        ;
-
-        Period:
-            'second' | 'minute' | 'hour' | 'day'
-        ;
-
-        FunctionCall:
-            name=ID '(' args+=Value[','] ')'
-        ;
-
-        Workflow:
-            'workflow' name=ID '{'
-                'agents' ':' '[' agents+=ID[','] ']'
-            '}'
-        ;
-
-        Comment: /\\/\\/.*$/;
-        """
-        self.metamodel = metamodel_from_str(grammar)
-
-    def _register_processors(self):
-        """Register all processors from the registry."""
-        # Register model processors
-        for processor in get_processors("model"):
-            self.metamodel.register_model_processor(processor)
-
-        # Register object processors
-        for obj_type in ["agent", "capability", "parameter"]:
-            processors = get_processors(obj_type)
-            if processors:
-                self.metamodel.register_obj_processors({obj_type.capitalize(): processor for processor in processors})
-
-    def parse(self, content: str) -> Any:
+    def parse(self, content: str) -> dict[str, list]:
         """
         Parse Agent DSL content.
 
@@ -141,24 +153,34 @@ class AgentParser:
             content: DSL string to parse
 
         Returns:
-            Parsed model object
+            Dictionary with list of agents
 
         Raises:
-            AgentaraParseError: If parsing fails
+            Exception: If parsing fails
         """
         try:
-            model = self.metamodel.model_from_str(content)
+            # Handle empty content
+            if not content.strip():
+                return {"agents": []}
 
-            # Handle empty model case - textX returns empty string for completely empty input
-            if isinstance(model, str) and not model.strip():
-                # Create an empty model object with required attributes
-                class EmptyModel:
-                    def __init__(self):
-                        self.agents = []
-                        self.workflows = []
+            # Parse with Lark
+            tree = self.parser.parse(content)
 
-                return EmptyModel()
+            # Transform to model objects
+            result = self.transformer.transform(tree)
 
-            return model
+            return result
+
+        except UnexpectedToken as e:
+            # Convert Lark error to our custom error
+            line = e.line
+            column = e.column
+            expected = e.expected
+            message = f"Syntax error at line {line}, column {column}: expected {expected}"
+            raise Exception(message) from e
+        except UnexpectedEOF as e:
+            raise Exception("Unexpected end of file") from e
+        except UnexpectedInput as e:
+            raise Exception(f"Unexpected input: {e}") from e
         except Exception as e:
-            raise AgentaraParseError(f"Failed to parse DSL: {e}") from e
+            raise Exception(f"Failed to parse DSL: {e}") from e

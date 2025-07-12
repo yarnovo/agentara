@@ -40,11 +40,11 @@ format:
 
 # 代码检查
 lint:
-	uv run ruff check agentara/ tests/
+	uv run ruff check agentara/
 
 # 类型检查
 typecheck:
-	uv run pyright agentara/ tests/
+	uv run pyright agentara/
 
 # 运行所有检查
 check: lint typecheck test

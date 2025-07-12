@@ -1,1 +1,1 @@
-"""Unit tests for Agentara modules."""
+"""Unit tests for Agentara."""

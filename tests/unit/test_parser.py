@@ -2,7 +2,7 @@
 
 import pytest
 
-from agentara import AgentaraParseError, AgentParser
+from agentara import AgentParser
 
 
 class TestAgentParser:
@@ -12,10 +12,10 @@ class TestAgentParser:
         """Test parsing an empty model."""
         parser = AgentParser()
         content = ""
-        model = parser.parse(content)
-        assert model is not None
-        assert hasattr(model, "agents")
-        assert len(model.agents) == 0
+        result = parser.parse(content)
+        assert result is not None
+        assert "agents" in result
+        assert len(result["agents"]) == 0
 
     def test_parse_simple_agent(self):
         """Test parsing a simple agent definition."""
@@ -26,11 +26,13 @@ class TestAgentParser:
             description: "A simple test agent"
         }
         """
-        model = parser.parse(content)
-        assert len(model.agents) == 1
+        result = parser.parse(content)
+        assert len(result["agents"]) == 1
 
-        agent = model.agents[0]
-        assert agent.name == "SimpleAgent"
+        agent = result["agents"][0]
+        assert agent["id"] == "SimpleAgent"
+        assert agent["properties"]["name"] == "Simple Agent"
+        assert agent["properties"]["description"] == "A simple test agent"
 
     def test_parse_multiple_agents(self):
         """Test parsing multiple agent definitions."""
@@ -38,210 +40,125 @@ class TestAgentParser:
         content = """
         agent FirstAgent {
             name: "First Agent"
+            model_provider: "openai"
         }
 
         agent SecondAgent {
             name: "Second Agent"
+            model_provider: "anthropic"
         }
         """
-        model = parser.parse(content)
-        assert len(model.agents) == 2
-        assert model.agents[0].name == "FirstAgent"
-        assert model.agents[1].name == "SecondAgent"
+        result = parser.parse(content)
+        assert len(result["agents"]) == 2
+        assert result["agents"][0]["id"] == "FirstAgent"
+        assert result["agents"][1]["id"] == "SecondAgent"
 
-    def test_parse_agent_with_capabilities(self):
-        """Test parsing agent with capabilities."""
+    def test_parse_agent_with_all_properties(self):
+        """Test parsing agent with all supported properties."""
         parser = AgentParser()
         content = """
-        agent WebSearcher {
-            name: "Web Search Agent"
-            version: "1.0.0"
-
-            capabilities [
-                search_web,
-                extract_content,
-                summarize
-            ]
+        agent CompleteAgent {
+            name: "Complete Agent"
+            description: "An agent with all properties"
+            system_prompt: "You are a helpful assistant."
+            model_provider: "openai"
+            model_name: "gpt-4"
+            temperature: 0.7
+            max_tokens: 2000
         }
         """
-        model = parser.parse(content)
-        agent = model.agents[0]
-        assert agent.name == "WebSearcher"
-        assert hasattr(agent, "capabilities")
-        assert len(agent.capabilities.capabilities) == 3
+        result = parser.parse(content)
+        agent = result["agents"][0]
+        props = agent["properties"]
 
-    def test_parse_agent_with_parameters(self):
-        """Test parsing agent with parameters."""
+        assert props["name"] == "Complete Agent"
+        assert props["description"] == "An agent with all properties"
+        assert props["system_prompt"] == "You are a helpful assistant."
+        assert props["model_provider"] == "openai"
+        assert props["model_name"] == "gpt-4"
+        assert props["temperature"] == 0.7
+        assert props["max_tokens"] == 2000
+
+    def test_parse_with_numbers(self):
+        """Test parsing numeric values."""
         parser = AgentParser()
         content = """
-        agent ConfigurableAgent {
-            name: "Configurable Agent"
-
-            parameters {
-                max_results: 10
-                timeout: 30
-                api_key: required
-            }
+        agent NumericAgent {
+            temperature: 0.5
+            max_tokens: 1000
         }
         """
-        model = parser.parse(content)
-        agent = model.agents[0]
-        assert hasattr(agent, "parameters")
-        assert len(agent.parameters.params) == 3
+        result = parser.parse(content)
+        agent = result["agents"][0]
 
-    def test_parse_agent_with_rules(self):
-        """Test parsing agent with rules."""
-        parser = AgentParser()
-        content = """
-        agent RuleBasedAgent {
-            name: "Rule Based Agent"
-
-            rules {
-                on_error: retry(3)
-                ratelimit: 10/minute
-                timeout: 60
-            }
-        }
-        """
-        model = parser.parse(content)
-        agent = model.agents[0]
-        assert hasattr(agent, "rules")
-        assert len(agent.rules.rules) == 3
-
-    def test_parse_complex_agent(self):
-        """Test parsing a complex agent with all features."""
-        parser = AgentParser()
-        content = """
-        agent ComplexAgent {
-            name: "Complex AI Agent"
-            description: "A fully featured agent"
-            version: "2.0.0"
-            author: "Test Author"
-
-            capabilities [
-                natural_language_processing,
-                code_generation(language("python"), style("pep8")),
-                data_analysis
-            ]
-
-            parameters {
-                model: "gpt-4"
-                temperature: 0.7
-                max_tokens: 2000
-                api_key: required
-            }
-
-            rules {
-                on_error: retry(3)
-                rate_limit: 100/hour
-                timeout: 120
-                max_concurrent: 5
-            }
-        }
-        """
-        model = parser.parse(content)
-        agent = model.agents[0]
-
-        assert agent.name == "ComplexAgent"
-        assert len(agent.properties) >= 4
-        assert hasattr(agent, "capabilities")
-        assert hasattr(agent, "parameters")
-        assert hasattr(agent, "rules")
-
-    def test_parse_workflow(self):
-        """Test parsing workflow definition."""
-        parser = AgentParser()
-        content = """
-        agent DataCollector {
-            name: "Data Collector"
-        }
-
-        agent DataProcessor {
-            name: "Data Processor"
-        }
-
-        agent DataAnalyzer {
-            name: "Data Analyzer"
-        }
-
-        workflow DataPipeline {
-            agents: [DataCollector, DataProcessor, DataAnalyzer]
-
-            flow {
-                DataCollector -> DataProcessor
-                DataProcessor -> DataAnalyzer
-            }
-        }
-        """
-        model = parser.parse(content)
-
-        assert len(model.agents) == 3
-        assert hasattr(model, "workflows")
-        assert len(model.workflows) == 1
-
-        workflow = model.workflows[0]
-        assert workflow.name == "DataPipeline"
-        assert len(workflow.agents) == 3
+        assert agent["properties"]["temperature"] == 0.5
+        assert isinstance(agent["properties"]["temperature"], float)
+        assert agent["properties"]["max_tokens"] == 1000
+        assert isinstance(agent["properties"]["max_tokens"], int)
 
     def test_parse_with_comments(self):
-        """Test parsing DSL with comments."""
+        """Test parsing with comments."""
         parser = AgentParser()
         content = """
         // This is a comment
         agent CommentedAgent {
             name: "Agent with comments"
             // Another comment
-            description: "Testing comment support"
+            description: "Test agent"
         }
+        // Final comment
         """
-        model = parser.parse(content)
-        assert len(model.agents) == 1
-        assert model.agents[0].name == "CommentedAgent"
+        result = parser.parse(content)
+        assert len(result["agents"]) == 1
+        assert result["agents"][0]["properties"]["name"] == "Agent with comments"
 
     def test_parse_invalid_syntax(self):
-        """Test parsing invalid syntax raises error."""
+        """Test parsing with invalid syntax."""
         parser = AgentParser()
         content = """
         agent InvalidAgent {
-            name:
+            name "Missing colon"
         }
         """
-        with pytest.raises(AgentaraParseError):
+        with pytest.raises(Exception) as exc_info:
             parser.parse(content)
+        assert "Syntax error" in str(exc_info.value)
 
     def test_parse_missing_closing_brace(self):
         """Test parsing with missing closing brace."""
         parser = AgentParser()
         content = """
-        agent UnclosedAgent {
-            name: "Unclosed"
+        agent Unclosed {
+            name: "Unclosed agent"
         """
-        with pytest.raises(AgentaraParseError):
+        with pytest.raises(Exception) as exc_info:
             parser.parse(content)
-
-    def test_parse_invalid_capability_syntax(self):
-        """Test parsing invalid capability syntax."""
-        parser = AgentParser()
-        content = """
-        agent BadCapabilities {
-            capabilities [
-                search_web
-                extract_content
-            ]
-        }
-        """
-        # Missing comma between capabilities
-        with pytest.raises(AgentaraParseError):
-            parser.parse(content)
+        assert "error" in str(exc_info.value).lower()
 
     def test_parse_empty_agent(self):
-        """Test parsing empty agent definition."""
+        """Test parsing an agent with no properties."""
         parser = AgentParser()
         content = """
         agent EmptyAgent {
         }
         """
-        model = parser.parse(content)
-        assert len(model.agents) == 1
-        assert model.agents[0].name == "EmptyAgent"
-        assert len(model.agents[0].properties) == 0
+        result = parser.parse(content)
+        assert len(result["agents"]) == 1
+        assert result["agents"][0]["id"] == "EmptyAgent"
+        assert result["agents"][0]["properties"] == {}
+
+    def test_parse_with_string_identifiers(self):
+        """Test parsing with string values vs identifiers."""
+        parser = AgentParser()
+        content = """
+        agent TestAgent {
+            model_provider: openai
+            model_name: "gpt-4"
+        }
+        """
+        result = parser.parse(content)
+        agent = result["agents"][0]
+
+        # Both should work - identifier and string
+        assert agent["properties"]["model_provider"] == "openai"
+        assert agent["properties"]["model_name"] == "gpt-4"

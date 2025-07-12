@@ -1,0 +1,8 @@
+{
+  "description": "Syntax error - missing colon",
+  "input": "agent BadAgent {\n    name \"Missing colon\"\n}",
+  "expected": {
+    "success": false,
+    "error_contains": "Syntax error"
+  }
+}

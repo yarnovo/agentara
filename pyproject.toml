@@ -4,7 +4,9 @@ version = "0.0.0"
 description = "AI Agent generation framework based on textX DSL"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [ "textX>=3.0.0",]
+dependencies = [
+    "lark>=1.2.2",
+]
 [[project.authors]]
 name = "Agentara Team"
 

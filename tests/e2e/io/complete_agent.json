@@ -1,0 +1,17 @@
+{
+  "description": "Agent with all properties",
+  "input": "agent CompleteAgent {\n    name: \"Complete\"\n    description: \"A complete agent\"\n    system_prompt: \"You are helpful.\"\n    model_provider: \"anthropic\"\n    model_name: \"claude-3\"\n    temperature: 0.7\n    max_tokens: 4000\n}",
+  "expected": {
+    "success": true,
+    "agents_count": 1,
+    "first_agent_properties": {
+      "name": "Complete",
+      "description": "A complete agent",
+      "system_prompt": "You are helpful.",
+      "model_provider": "anthropic",
+      "model_name": "claude-3",
+      "temperature": 0.7,
+      "max_tokens": 4000
+    }
+  }
+}

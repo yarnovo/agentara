@@ -1,9 +1,8 @@
 {
-  "name": "empty_model",
-  "description": "Test parsing empty DSL content",
+  "description": "Empty model parsing",
   "input": "",
-  "expected_output": {
-    "agents": []
-  },
-  "expected_errors": []
+  "expected": {
+    "success": true,
+    "agents_count": 0
+  }
 }
