@@ -1,0 +1,26 @@
+{
+  "name": "workflow_definition",
+  "description": "Test parsing workflow with multiple agents",
+  "input": "agent Collector {\n    name: \"Data Collector\"\n    capabilities [collect_data]\n}\n\nagent Processor {\n    name: \"Data Processor\"\n    capabilities [process_data]\n}\n\nagent Analyzer {\n    name: \"Data Analyzer\"\n    capabilities [analyze_data]\n}\n\nworkflow DataPipeline {\n    agents: [Collector, Processor, Analyzer]\n    \n    flow {\n        Collector -> Processor\n        Processor -> Analyzer\n    }\n}",
+  "expected_output": {
+    "agents": [
+      {
+        "name": "Collector"
+      },
+      {
+        "name": "Processor"
+      },
+      {
+        "name": "Analyzer"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "DataPipeline",
+        "agent_count": 3,
+        "connections": 2
+      }
+    ]
+  },
+  "expected_errors": []
+}

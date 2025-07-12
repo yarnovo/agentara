@@ -1,20 +1,18 @@
-.PHONY: help sync dev-install-global dev-uninstall-global test format lint type-check check all build publish clean pre-commit pre-commit-run
+.PHONY: help sync test format lint typecheck check all build publish clean pre-commit pre-commit-run
 
 # 默认目标：显示帮助信息
 help:
-	@echo "bumpster 开发常用命令："
+	@echo "agentara 开发常用命令："
 	@echo ""
 	@echo "开发环境设置："
 	@echo "  make sync                 - 同步依赖（使用 uv sync）"
-	@echo "  make dev-install-global   - 全局开发安装（类似 npm link）"
-	@echo "  make dev-uninstall-global - 卸载全局开发版本"
 	@echo ""
 	@echo "代码质量："
 	@echo "  make test          - 运行测试"
 	@echo "  make format        - 格式化代码（ruff format + ruff fix）"
 	@echo "  make lint          - 代码检查（ruff）"
-	@echo "  make type-check    - 类型检查（pyright）"
-	@echo "  make check         - 运行所有检查（lint + type-check + test）"
+	@echo "  make typecheck     - 类型检查（pyright）"
+	@echo "  make check         - 运行所有检查（lint + typecheck + test）"
 	@echo ""
 	@echo "Pre-commit hooks："
 	@echo "  make pre-commit     - 安装 pre-commit hooks"
@@ -31,35 +29,25 @@ help:
 sync:
 	uv sync
 
-# 全局开发安装（类似 npm link）
-dev-install-global:
-	uv tool install -e .
-	@echo "✅ 已全局安装开发版本，可以在任何地方使用 'bump' 或 'bump-py' 命令"
-
-# 卸载全局开发版本
-dev-uninstall-global:
-	uv tool uninstall bumpster
-	@echo "✅ 已卸载全局开发版本"
-
 # 运行测试
 test:
 	uv run pytest
 
 # 代码格式化
 format:
-	uv run ruff format bump_version/
-	uv run ruff check --fix bump_version/
+	uv run ruff format agentara/ tests/
+	uv run ruff check --fix agentara/ tests/
 
 # 代码检查
 lint:
-	uv run ruff check bump_version/
+	uv run ruff check agentara/ tests/
 
 # 类型检查
-type-check:
-	uv run pyright bump_version/
+typecheck:
+	uv run pyright agentara/ tests/
 
 # 运行所有检查
-check: lint type-check test
+check: lint typecheck test
 
 # 构建包
 build:

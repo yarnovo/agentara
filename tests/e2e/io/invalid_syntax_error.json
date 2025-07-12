@@ -1,0 +1,7 @@
+{
+  "name": "invalid_syntax_error",
+  "description": "Test parsing error with invalid syntax",
+  "input": "agent BrokenAgent {\n    name: \n    description: \"Missing value for name\"\n}",
+  "expected_output": null,
+  "expected_errors": ["Failed to parse DSL", "parse"]
+}

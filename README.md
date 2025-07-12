@@ -1,10 +1,18 @@
 # Agentara
 
-基于 textX DSL 的 AI Agent 生成框架，通过标准化的领域特定语言定义和验证 AI Agent。
+基于 textX DSL 的 AI Agent 定义和验证 Python 库。
+
+[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 项目概述
 
-Agentara 是一个创新的框架，旨在解决 AI 生成 Agent 时的标准化和规范性问题。通过使用 [textX](https://github.com/textX/textX) 库定义清晰的 DSL（领域特定语言），确保 AI 生成的 Agent 符合预定义的标准格式。
+Agentara 是一个 Python 库，提供了基于 DSL（领域特定语言）的 AI Agent 定义和验证功能。通过使用 [textX](https://github.com/textX/textX) 作为底层解析引擎，Agentara 让开发者能够：
+
+- 使用清晰的 DSL 语法定义 AI Agent
+- 自动验证 Agent 定义的正确性
+- 在 Python 程序中集成和使用 Agent
+- 为 AI 系统提供标准化的 Agent 规范
 
 ## 核心特性
 
@@ -25,56 +33,123 @@ textX 是一个成熟的 Python DSL 框架，具有以下优势：
 - **解析即验证**：解析过程自动完成基础验证
 - **易于扩展**：支持自定义处理器和验证规则
 
-## 快速开始
+## 安装
 
-### 安装
+```bash
+pip install agentara
+```
+
+### 开发安装
 
 ```bash
 # 克隆仓库
 git clone https://github.com/yourusername/agentara.git
 cd agentara
 
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 安装依赖
-pip install -e .
+# 安装开发依赖
+pip install -e ".[dev]"
 ```
 
-### 基本使用
+## 快速开始
+
+### 作为库使用
 
 ```python
-from agentara import AgentParser
+from agentara import AgentParser, AgentValidator, AgentaraParseError
 
-# 创建解析器
+# 创建解析器和验证器
 parser = AgentParser()
+validator = AgentValidator()
 
 # 定义 Agent
-agent_definition = """
+agent_dsl = """
 agent WebSearcher {
     name: "Web Search Agent"
     description: "Searches the web for information"
+    version: "1.0.0"
     
-    capabilities {
-        - search_web
-        - extract_content
-        - summarize
-    }
+    capabilities [
+        search_web,
+        extract_content,
+        summarize
+    ]
     
     parameters {
         max_results: 10
         timeout: 30
+        api_key: required
+    }
+    
+    rules {
+        on_error: retry(3)
+        rate_limit: 10/minute
     }
 }
 """
 
 # 解析和验证
 try:
-    agent = parser.parse(agent_definition)
-    print(f"成功解析 Agent: {agent.name}")
-except Exception as e:
+    # 解析 DSL
+    model = parser.parse(agent_dsl)
+    
+    # 验证语义规则
+    validator.validate(model)
+    
+    # 获取 Agent 对象
+    agents = model.agents
+    for agent in agents:
+        print(f"Agent: {agent.name}")
+        if hasattr(agent, 'properties'):
+            for prop in agent.properties:
+                if prop.name == 'version':
+                    print(f"Version: {prop.value}")
+        if hasattr(agent, 'capabilities') and agent.capabilities:
+            print(f"Capabilities: {[cap.name for cap in agent.capabilities.capabilities]}")
+        
+except AgentaraParseError as e:
     print(f"解析错误: {e}")
+except Exception as e:
+    print(f"验证错误: {e}")
+```
+
+### 从文件加载
+
+```python
+from agentara import load_agent_from_file
+
+# 从文件加载并验证
+try:
+    agent_model = load_agent_from_file("path/to/agent.dsl")
+    print(f"成功加载 {len(agent_model.agents)} 个 Agent")
+except Exception as e:
+    print(f"加载失败: {e}")
+```
+
+### 自定义验证规则
+
+```python
+from agentara import register_validator
+
+# 注册自定义验证器
+@register_validator("agent")
+def validate_agent_name(agent):
+    """验证 Agent 名称规范"""
+    if not agent.name.replace("_", "").isalnum():
+        raise ValueError(
+            f"Agent 名称只能包含字母、数字和下划线: {agent.name}"
+        )
+
+@register_validator("capability")
+def validate_capability(capability):
+    """验证能力定义"""
+    allowed_capabilities = [
+        "search_web", "extract_content", "summarize",
+        "code_generation", "data_analysis"
+    ]
+    if capability.name not in allowed_capabilities:
+        raise ValueError(
+            f"未知的能力类型: {capability.name}"
+        )
 ```
 
 ## 项目结构
@@ -82,14 +157,18 @@ except Exception as e:
 ```
 agentara/
 ├── agentara/              # 核心库
-│   ├── __init__.py
+│   ├── __init__.py       # 包导出定义
+│   ├── exceptions.py     # 自定义异常类
 │   ├── grammar/          # DSL 语法定义
 │   │   └── agent.tx      # Agent DSL 语法
+│   ├── loader.py         # 文件加载器
 │   ├── parser.py         # 解析器实现
-│   ├── validators/       # 验证器
-│   └── generators/       # 代码生成器
+│   ├── registry.py       # 验证器和处理器注册
+│   └── validator.py      # 验证器实现
 ├── examples/             # 示例 Agent 定义
 ├── tests/               # 测试用例
+│   ├── unit/            # 单元测试
+│   └── e2e/             # 端到端测试
 ├── research/            # 技术调研文档
 └── docs/               # 项目文档
 ```
@@ -110,31 +189,36 @@ agent AdvancedAgent {
     name: "Advanced AI Agent"
     description: "Multi-capability agent"
     
-    capabilities {
-        - natural_language_processing
-        - code_generation
-        - data_analysis
-    }
+    capabilities [
+        natural_language_processing,
+        code_generation(
+            language("python"),
+            max_lines(1000)
+        ),
+        data_analysis
+    ]
     
     parameters {
         model: "gpt-4"
         temperature: 0.7
         max_tokens: 2000
+        api_key: required
     }
     
     rules {
-        // 定义行为规则
         on_error: retry(3)
-        timeout: 60
+        rate_limit: 60/hour
+        timeout: 30
     }
 }
 
-// Agent 组合
+// 工作流定义
 workflow DataPipeline {
     agents: [DataCollector, DataProcessor, DataAnalyzer]
     
     flow {
-        DataCollector -> DataProcessor -> DataAnalyzer
+        DataCollector -> DataProcessor
+        DataProcessor -> DataAnalyzer
     }
 }
 ```
@@ -158,42 +242,32 @@ def validate_agent_name(agent):
         raise ValueError(f"Agent 名称只能包含字母和数字: {agent.name}")
 ```
 
-## 工具链
+## API 参考
 
-### 命令行工具
+### 核心类
 
-```bash
-# 验证 Agent 定义
-agentara validate agent.dsl
+- `AgentParser`: DSL 解析器
+- `AgentValidator`: 语义验证器
+- `AgentaraError`: 基础异常类
+- `AgentaraParseError`: 解析错误异常
+- `AgentaraValidationError`: 验证错误异常
 
-# 生成代码
-agentara generate agent.dsl --output agent.py
+### 工具函数
 
-# 交互式 Agent 设计器
-agentara designer
-```
-
-### API 集成
-
-```python
-from agentara import AgentRegistry
-
-# 注册 Agent
-registry = AgentRegistry()
-registry.register_from_file("agents/web_searcher.dsl")
-
-# 获取并使用 Agent
-agent = registry.get("WebSearcher")
-result = agent.execute(task="Search for Python tutorials")
-
-```
+- `load_agent_from_file()`: 从文件加载 Agent
+- `load_agent_from_str()`: 从字符串加载 Agent
+- `register_validator()`: 注册自定义验证器
+- `register_processor()`: 注册模型处理器
+- `clear_registry()`: 清空注册的验证器和处理器（用于测试）
 
 ## 开发路线图
 
-- [ ] 完成基础 DSL 语法定义
-- [ ] 实现核心解析器和验证器
+- [x] 完成基础 DSL 语法定义
+- [x] 实现核心解析器和验证器
+- [x] 支持自定义验证规则
+- [x] 实现模型处理器
+- [x] 完整的测试覆盖
 - [ ] 开发代码生成器
-- [ ] 创建 CLI 工具
 - [ ] 编写完整文档
 - [ ] 发布第一个版本
 

@@ -1,0 +1,7 @@
+{
+  "name": "validation_error_no_name",
+  "description": "Test validation error when agent has no name",
+  "input": "agent {\n    description: \"Agent without name\"\n}",
+  "expected_output": null,
+  "expected_errors": ["Failed to parse", "Expected"]
+}

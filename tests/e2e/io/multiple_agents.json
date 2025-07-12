@@ -1,0 +1,19 @@
+{
+  "name": "multiple_agents",
+  "description": "Test parsing multiple agent definitions",
+  "input": "agent FirstAgent {\n    name: \"First Agent\"\n    version: \"1.0.0\"\n}\n\nagent SecondAgent {\n    name: \"Second Agent\"\n    version: \"2.0.0\"\n}\n\nagent ThirdAgent {\n    name: \"Third Agent\"\n    version: \"3.0.0\"\n}",
+  "expected_output": {
+    "agents": [
+      {
+        "name": "FirstAgent"
+      },
+      {
+        "name": "SecondAgent"
+      },
+      {
+        "name": "ThirdAgent"
+      }
+    ]
+  },
+  "expected_errors": []
+}

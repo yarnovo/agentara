@@ -1,0 +1,14 @@
+{
+  "name": "complex_agent_full_features",
+  "description": "Test parsing complex agent with all features",
+  "input": "agent AdvancedAssistant {\n    name: \"Advanced AI Assistant\"\n    description: \"A fully-featured AI assistant\"\n    version: \"3.0.0\"\n    author: \"Test Team\"\n    \n    capabilities [\n        natural_language_processing,\n        code_generation(language(\"python\"), style(\"pep8\")),\n        data_analysis\n    ]\n    \n    parameters {\n        model: \"gpt-4\"\n        temperature: 0.7\n        max_tokens: 2000\n        api_key: required\n    }\n    \n    rules {\n        on_error: retry(3)\n        rate_limit: 100/hour\n        timeout: 60\n    }\n}",
+  "expected_output": {
+    "agents": [
+      {
+        "name": "AdvancedAssistant",
+        "capabilities": ["natural_language_processing", "code_generation", "data_analysis"]
+      }
+    ]
+  },
+  "expected_errors": []
+}

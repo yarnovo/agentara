@@ -1,0 +1,18 @@
+{
+  "name": "simple_agent_success",
+  "description": "Test successful parsing of a simple agent",
+  "input": "agent SimpleBot {\n    name: \"Simple Bot\"\n    description: \"A simple test bot\"\n    version: \"1.0.0\"\n}",
+  "expected_output": {
+    "agents": [
+      {
+        "name": "SimpleBot",
+        "properties": {
+          "name": "Simple Bot",
+          "description": "A simple test bot",
+          "version": "1.0.0"
+        }
+      }
+    ]
+  },
+  "expected_errors": []
+}

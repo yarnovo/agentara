@@ -1,0 +1,113 @@
+// Agentara DSL Grammar Definition
+// This grammar defines the syntax for AI Agent definitions
+
+Model:
+    agents*=Agent
+    workflows*=Workflow
+;
+
+Agent:
+    'agent' name=ID '{'
+        properties*=Property
+        capabilities=Capabilities?
+        parameters=Parameters?
+        rules=Rules?
+    '}'
+;
+
+Property:
+    name=PropertyName ':' value=STRING
+;
+
+PropertyName:
+    'name' | 'description' | 'version' | 'author' | 'tags'
+;
+
+Capabilities:
+    'capabilities' '['
+        capabilities+=Capability[',']
+    ']'
+;
+
+Capability:
+    name=CapabilityName ('(' params+=CapabilityParam[','] ')')?
+;
+
+CapabilityName:
+    /[a-zA-Z_][a-zA-Z0-9_]*/
+;
+
+CapabilityParam:
+    name=ID '(' value=Value ')'
+;
+
+Parameters:
+    'parameters' '{'
+        params+=ParameterDef
+    '}'
+;
+
+ParameterDef:
+    name=ParamName ':' (value=Value | 'required')
+;
+
+Value:
+    FLOAT | INT | STRING | BOOL | ID
+;
+
+ParamName:
+    /[a-zA-Z_][a-zA-Z0-9_]*/
+;
+
+
+Rules:
+    'rules' '{'
+        rules+=Rule
+    '}'
+;
+
+Rule:
+    name=RuleName ':' value=RuleValue
+;
+
+RuleName:
+    /[a-zA-Z_][a-zA-Z0-9_]*/
+;
+
+RuleValue:
+    FunctionCall | RateLimit | STRING | INT | ID
+;
+
+FunctionCall:
+    name=ID '(' args+=Value[','] ')'
+;
+
+RateLimit:
+    count=INT '/' period=Period
+;
+
+Period:
+    'second' | 'minute' | 'hour' | 'day'
+;
+
+Workflow:
+    'workflow' name=ID '{'
+        'agents' ':' '[' agents+=[Agent][','] ']'
+        flow=Flow?
+    '}'
+;
+
+Flow:
+    'flow' '{'
+        connections+=Connection
+    '}'
+;
+
+Connection:
+    from=[Agent] '->' to=[Agent]
+;
+
+// Comments
+Comment:
+    /\/\/.*$/
+;

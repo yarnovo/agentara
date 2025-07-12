@@ -1,0 +1,7 @@
+{
+  "name": "missing_closing_brace",
+  "description": "Test parsing error with missing closing brace",
+  "input": "agent UnclosedAgent {\n    name: \"Unclosed Agent\"\n    description: \"This agent is missing closing brace\"\n",
+  "expected_output": null,
+  "expected_errors": ["Failed to parse", "Expected"]
+}

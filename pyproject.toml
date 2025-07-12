@@ -1,12 +1,12 @@
 [project]
-name = "bumpster"
-version = "0.1.0"
-description = "A CLI tool for semantic version management"
+name = "agentara"
+version = "0.0.0"
+description = "AI Agent generation framework based on textX DSL"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [ "click>=8.1.0", "rich>=13.0.0", "inquirer>=3.1.0", "tomlkit>=0.12.0", "packaging>=23.0",]
+dependencies = [ "textX>=3.0.0",]
 [[project.authors]]
-name = "AI App Base"
+name = "Agentara Team"
 
 [build-system]
 requires = [ "hatchling",]
@@ -16,16 +16,15 @@ build-backend = "hatchling.build"
 dev = [ "pytest>=7.0.0", "pytest-cov>=4.0.0", "pyright>=1.1.0", "ruff>=0.1.0", "pre-commit>=3.5.0",]
 
 [project.license]
-text = "ISC"
+text = "MIT"
 
-[project.scripts]
-bump = "bump_version.cli:main"
-bump-py = "bump_version.cli:main"
+# No CLI scripts - this is a library
 
 [project.urls]
-Homepage = "https://github.com/yarnovo/bumpster-py"
-Repository = "https://github.com/yarnovo/bumpster-py.git"
-Issues = "https://github.com/yarnovo/bumpster-py/issues"
+Homepage = "https://github.com/agentara/agentara"
+Repository = "https://github.com/agentara/agentara.git"
+Issues = "https://github.com/agentara/agentara/issues"
+Documentation = "https://github.com/agentara/agentara#readme"
 
 [tool.ruff]
 target-version = "py312"
@@ -51,4 +50,4 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.hatch.build]
-include = [ "bump_version/**/*.py", "bump_version/py.typed",]
+include = [ "agentara/**/*.py", "agentara/py.typed", "agentara/grammar/**/*.tx",]
